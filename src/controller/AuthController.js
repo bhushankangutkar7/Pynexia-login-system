@@ -4,6 +4,7 @@ import User from '../models/UserModel.js';
 import { JWT_SECRET, JWT_EXPIRES_IN } from '../config/Constants.js';
 import { loginSchema, registerSchema } from '../validators/AuthValidation.js';
 import { createToken } from '../utils/JWT.js';
+import { hashPassword } from '../utils/Bcrypt.js';
 
 export const register = async (req, res, next) => {
   try {
@@ -14,8 +15,17 @@ export const register = async (req, res, next) => {
         stripUnknown: true,
       }
     );
+
+    const hashedPassword = await hashPassword(validatedRegData.password);
+
+    const createUser = {
+      email: validatedRegData.email,
+      firstName: validatedRegData.firstName,
+      lastName: validatedRegData.lastName,
+      password: hashedPassword,
+    }
     
-    const user = await User.create(validatedRegData);
+    const user = await User.create(createUser);
 
     return res.status(201).json({
       status: 201,
@@ -45,11 +55,19 @@ export const login = async (req, res, next) => {
     );
     const user = await User.findOne({ email: validatedData.email }).select('+password');
 
-    if (!user || !(await bcrypt.compare(validatedData.password, user.password))) {
+    if (!user) {
       const err = new Error('Invalid email or password');
       err.statusCode = 401;
       return next(err);
     }
+
+    const isPasswordMatched = await bcrypt.compare(validatedData.password, user.password)
+
+    if (!isPasswordMatched) {
+      const err = new Error('Invalid email or password');
+      err.statusCode = 401;
+      return next(err);
+    };
 
     return res.json({
       status: 200,
@@ -63,6 +81,7 @@ export const login = async (req, res, next) => {
         token: createToken(user._id),
       },
     });
+
   } catch (err) {
     console.error('Login user error: ', err.message);
     return next(err);

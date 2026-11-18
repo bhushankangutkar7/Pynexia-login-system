@@ -3,6 +3,7 @@ import * as yup from 'yup';
 import User from '../models/UserModel.js';
 import authenticate from '../middleware/AuthMiddleware.js';
 import updateUserSchema from '../validators/UserValidation.js';
+import { hashPassword } from '../utils/Bcrypt.js';
 
 
 export const getMe = async (req, res, next) => {
@@ -39,10 +40,18 @@ export const updateMe = async (req, res, next) => {
       abortEarly: false,
       stripUnknown: true,
     });
+    
+    const updateData = {
+      ...profileData,
+    }
+
+    if (profileData.password) {
+      updateData.password = await hashPassword(profileData.password)
+    };
 
     const user = await User.findByIdAndUpdate(
       req.user.id,
-      { $set: profileData },
+      { $set: updateData },
       { new: true, runValidators: true },
     ).select('_id email firstName lastName');
 
@@ -66,4 +75,4 @@ export const updateMe = async (req, res, next) => {
   } catch (err) {
     return next(err);
   }
-);
+};

@@ -5,11 +5,17 @@ import authRoutes from './src/routes/AuthRoutes.js';
 import userRoutes from './src/routes/UserRoutes.js';
 import globalErrorHandler from './src/middleware/GlobalErrorHandler.js';
 import globalRateLimiter from './src/utils/GlobalRateLimiter.js';
+import { PORT } from './src/config/Constants.js';
+import DBConnect from './src/config/DBConnect.js';
+
 
 const app = express();
 
+DBConnect();
+
 app.disable("x-powered-by");
 app.use(helmet());
+app.use(cors());
 app.use(express.json({ limit: "10kb" }));
 app.use(express.urlencoded({extended: true}));
 
@@ -33,3 +39,7 @@ app.use((req, res) => {
 });
 
 app.use(globalErrorHandler);
+
+app.listen(PORT, () => {
+  console.log(`Server is running on PORT: ${PORT}`);
+})

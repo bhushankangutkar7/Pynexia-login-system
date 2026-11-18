@@ -10,7 +10,6 @@ const userRouter = express.Router();
 userRouter.use(authenticate);
 
 userRouter.get('/me', getMe);
-
 userRouter.patch('/me', updateMe);
 
 export default userRouter;
